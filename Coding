@@ -1,0 +1,200 @@
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(caret)
+library(readr)
+library(writexl)
+library(e1071)
+library(Metrics)
+library(class)
+library(knn.covertree)
+library(cluster)
+library(randomForest)
+library(caret)
+library(gbm)
+library(xgboost)
+library(glmnet)
+library(cowplot)
+
+rec <- read_excel("D:/Desktop/ML/raw.xlsx") # import a pre-processed data.
+ 
+ind <- sample(2, nrow(rec), replace=TRUE, prob=c(0.8, 0.2)) # distribute data into training sets (80%) and testing sets (20%).
+train <- rec[ind==1,]
+test <- rec[ind==2,]
+write_xlsx(train,"D:/Desktop/ML/1.xlsx")
+write_xlsx(test,"D:/Desktop/ML/2.xlsx")
+
+
+data1 <- read_excel("D:/Desktop/ML/1.xlsx")
+data2 <- read_excel("D:/Desktop/ML/2.xlsx")
+x_train <- data1[ , -c(1)]
+x_test <- data2[ , -c(1)]
+
+#Linear
+model1 <- lm(Case~., data=data1)
+summary(model1)
+
+prediction1 <- predict(model1, x_train)
+prediction1a <- predict(model1, x_test)
+
+r1 <- R2(data1$Case, prediction1)
+mse1 <- mse(data1$Case, prediction1)
+rmse1 <- rmse(data1$Case, prediction1)
+mae1 <- mae(data1$Case, prediction1)
+
+r1a <- R2(data2$Case, prediction1a)
+mse1a <- mse(data2$Case, prediction1a)
+rmse1a <- rmse(data2$Case, prediction1a)
+mae1a <- mae(data2$Case, prediction1a)
+
+x1 <- c(r1, mse1, rmse1, mae1)
+x1a <- c(r1a, mse1a, rmse1a, mae1a)
+x1
+x1a
+
+#SVM
+model2 <- svm(Case~., data=data1)
+summary(model2)
+
+prediction2 <- predict(model2, x_train)
+prediction2a <- predict(model2, x_test)
+
+r2 <- R2(data1$Case, prediction2)
+mse2 <- mse(data1$Case, prediction2)
+rmse2 <- rmse(data1$Case, prediction2)
+mae2 <- mae(data1$Case, prediction2)
+
+r2a <- R2(data2$Case, prediction2a)
+mse2a <- mse(data2$Case, prediction2a)
+rmse2a <- rmse(data2$Case, prediction2a)
+mae2a <- mae(data2$Case, prediction2a)
+
+x2 <- c(r2, mse2, rmse2, mae2)
+x2a <- c(r2a, mse2a, rmse2a, mae2a)
+x2
+x2a
+
+#RandomForest
+model3 <- randomForest(Case~., data1, ntree=500)
+summary(model3)
+prediction3 <- predict(model3, x_train)
+prediction3a <- predict(model3, x_test)
+
+r3 <- R2(data1$Case, prediction3)
+mse3 <- mse(data1$Case, prediction3)
+rmse3 <- rmse(data1$Case, prediction3)
+mae3 <- mae(data1$Case, prediction3)
+
+r3a <- R2(data2$Case, prediction3a)
+mse3a <- mse(data2$Case, prediction3a)
+rmse3a <- rmse(data2$Case, prediction3a)
+mae3a <- mae(data2$Case, prediction3a)
+
+x3 <- c(r3, mse3, rmse3, mae3)
+x3a <- c(r3a, mse3a, rmse3a, mae3a)
+x3
+x3a
+
+#GBM
+fitControl <- trainControl(method = "repeatedcv", number = 4, repeats = 4)
+model4 <- train(Case~., data = data1, method = "gbm",trControl = fitControl, verbose = FALSE)
+prediction4 <- predict(model4, x_train)
+prediction4a <- predict(model4, x_test)
+
+r4 <- R2(data1$Case, prediction4)
+mse4 <- mse(data1$Case, prediction4)
+rmse4 <- rmse(data1$Case, prediction4)
+mae4 <- mae(data1$Case, prediction4)
+
+r4a <- R2(data2$Case, prediction4a)
+mse4a <- mse(data2$Case, prediction4a)
+rmse4a <- rmse(data2$Case, prediction4a)
+mae4a <- mae(data2$Case, prediction4a)
+
+x4 <- c(r4, mse4, rmse4, mae4)
+x4a <- c(r4a, mse4a, rmse4a, mae4a)
+x4
+x4a
+
+p1 <- cbind(prediction1, prediction2, prediction3, prediction4)
+p2 <- cbind(prediction1a, prediction2a, prediction3a, prediction4a)
+write_xlsx(data.frame(p1),"D:/Desktop/ML/p1.xlsx") # Export the prediction value for training sets.
+write_xlsx(data.frame(p2),"D:/Desktop/ML/p2.xlsx") # Export the predcition value for testing sets.
+
+rec1 <- read_excel("D:/Desktop/ML/p1.xlsx")
+rec2 <- round(rec1)
+rec2[rec2 < 0] <- 1 # Remove all negative value since no negative value of covid cases.
+write_xlsx(rec2,"D:/Desktop/ML/p3.xlsx")
+rec3 <- read_excel("D:/Desktop/ML/p2.xlsx")
+rec4 <- round(rec3)
+rec4[rec4 < 0] <- 1 # Remove all negative value since no negative value of covid cases.
+write_xlsx(rec4,"D:/Desktop/ML/p4.xlsx")
+
+p3 <- read_excel("D:/Desktop/ML/p3.xlsx")
+p3a <- read_excel("D:/Desktop/ML/p4.xlsx")
+
+R1 <- R2(data1$Case, p3$prediction1)
+Mse1 <- mse(data1$Case, p3$prediction1)
+Rmse1 <- rmse(data1$Case, p3$prediction1)
+Mae1 <- mae(data1$Case, p3$prediction1)
+
+R1a <- R2(data2$Case, p3a$prediction1a)
+Mse1a <- mse(data2$Case, p3a$prediction1a)
+Rmse1a <- rmse(data2$Case, p3a$prediction1a)
+Mae1a <- mae(data2$Case, p3a$prediction1a)
+
+X1 <- c(R1, Mse1, Rmse1, Mae1)
+X1a <- c(R1a, Mse1a, Rmse1a, Mae1a)
+X1
+X1a
+
+R2 <- R2(data1$Case, p3$prediction2)
+Mse2 <- mse(data1$Case, p3$prediction2)
+Rmse2 <- rmse(data1$Case, p3$prediction2)
+Mae2 <- mae(data1$Case, p3$prediction2)
+
+R2a <- R2(data2$Case, p3a$prediction2a)
+Mse2a <- mse(data2$Case, p3a$prediction2a)
+Rmse2a <- rmse(data2$Case, p3a$prediction2a)
+Mae2a <- mae(data2$Case, p3a$prediction2a)
+
+X2 <- c(R2, Mse2, Rmse2, Mae2)
+X2a <- c(R2a, Mse2a, Rmse2a, Mae2a)
+X2
+X2a
+
+R3 <- R2(data1$Case, p3$prediction3)
+Mse3 <- mse(data1$Case, p3$prediction3)
+Rmse3 <- rmse(data1$Case, p3$prediction3)
+Mae3 <- mae(data1$Case, p3$prediction3)
+
+R3a <- R2(data2$Case, p3a$prediction3a)
+Mse3a <- mse(data2$Case, p3a$prediction3a)
+Rmse3a <- rmse(data2$Case, p3a$prediction3a)
+Mae3a <- mae(data2$Case, p3a$prediction3a)
+
+X3 <- c(R3, Mse3, Rmse3, Mae3)
+X3a <- c(R3a, Mse3a, Rmse3a, Mae3a)
+X3
+X3a
+
+R4 <- R2(data1$Case, p3$prediction4)
+Mse4 <- mse(data1$Case, p3$prediction4)
+Rmse4 <- rmse(data1$Case, p3$prediction4)
+Mae4 <- mae(data1$Case, p3$prediction4)
+
+R4a <- R2(data2$Case, p3a$prediction4a)
+Mse4a <- mse(data2$Case, p3a$prediction4a)
+Rmse4a <- rmse(data2$Case, p3a$prediction4a)
+Mae4a <- mae(data2$Case, p3a$prediction4a)
+
+X4 <- c(R4, Mse4, Rmse4, Mae4)
+X4a <- c(R4a, Mse4a, Rmse4a, Mae4a)
+X4
+X4a
+
+p5 <- cbind(X1, X1a, X2, X2a, X3, X3a, X4, X4a)
+write_xlsx(data.frame(p5),"D:/Desktop/ML/p5.xlsx") # Export the performance criteria of all machine learning algorithm.
+
+```
